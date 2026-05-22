@@ -80,7 +80,7 @@ client.on('messageCreate', async (message) => {
     const ngay =
         `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
 
-    let result = `Ngay ${ngay}\n\n`;
+    let result = `Ngày ${ngay}\n\n`;
 
     for (const user in users) {
 
