@@ -67,7 +67,7 @@ client.on('messageCreate', async (message) => {
 
         saveData();
 
-        return message.reply('Da reset!');
+        return message.reply('Reset thành công🎉');
     }
 
     // TONG
@@ -89,7 +89,7 @@ client.on('messageCreate', async (message) => {
         tong += users[user];
     }
 
-    const chia3 = tong / 3;
+    const chia3 = Math.round((tong / 3) * 100) / 100;
 
     result += `\nTổng : ${tong}k`;
     result += `\nMỗi người nhận : ${chia3}k`;
