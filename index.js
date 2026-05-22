@@ -91,8 +91,8 @@ client.on('messageCreate', async (message) => {
 
     const chia3 = tong / 3;
 
-    result += `\nTổng công làm : ${tong}k`;
-    result += `\nThực nhận : ${chia3}k`;
+    result += `\nTong : ${tong}k`;
+    result += `\nMoi nguoi nhan : ${chia3}k`;
 
     return message.reply(result);
 }
