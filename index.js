@@ -24,6 +24,9 @@ const client = new Client({
         GatewayIntentBits.MessageContent
     ]
 });
+client.once('ready', () => {
+    console.log(`Bot online: ${client.user.tag}`);
+});
 // FILE LUU DU LIEU
 const DATA_FILE = './data.json';
 
