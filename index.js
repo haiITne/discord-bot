@@ -1,5 +1,18 @@
 require('dotenv').config();
 
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => {
+    res.send('Bot dang chay');
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`Web server dang chay o cong ${PORT}`);
+});
+
 const fs = require('fs');
 
 const { Client, GatewayIntentBits } = require('discord.js');
