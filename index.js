@@ -361,7 +361,7 @@ client.on('interactionCreate', async interaction => {
         saveData();
 
         return interaction.editReply(
-            `🎯 Đã đủ KPI ${formatMoney(amount)} cho sếp Danh :piñata: :piñata: :piñata: `
+            `🎯 Mục tiêu KPI ${formatMoney(amount)} cho sếp Danh :piñata: :piñata: :piñata: `
         );
     }
 
@@ -500,8 +500,30 @@ client.on('messageCreate', async (message) => {
 
     if (match) {
 
-        const soTien =
-            parseInt(match[1]);
+        let soTien =
+    parseInt(match[1]);
+
+// 2 chu so => x1000
+// VD: 15 => 15000
+
+if (
+    soTien >= 10 &&
+    soTien <= 99
+) {
+
+    soTien *= 1000;
+}
+
+// 3 chu so => x1000
+// VD: 150 => 150000
+
+else if (
+    soTien >= 100 &&
+    soTien <= 999
+) {
+
+    soTien *= 1000;
+}
 
         const username =
             message.author.username;
