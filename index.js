@@ -58,6 +58,9 @@ client.on('messageCreate', async (message) => {
 
     if (message.author.bot) return;
 
+    // CHI CHAY TRONG 1 KENH
+    if (message.channel.id !== process.env.CHANNEL_ID) return;
+
     const text = message.content.toLowerCase();
 
     // RESET
@@ -69,7 +72,6 @@ client.on('messageCreate', async (message) => {
 
         return message.reply('Reset thành công🎉');
     }
-
     // TONG
     if (text === '!tong') {
 
