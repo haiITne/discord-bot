@@ -2,7 +2,14 @@ require('dotenv').config();
 
 const express = require('express');
 const fs = require('fs');
-const { Client, GatewayIntentBits } = require('discord.js');
+
+const {
+    Client,
+    GatewayIntentBits,
+    SlashCommandBuilder,
+    REST,
+    Routes
+} = require('discord.js');
 
 // =========================
 // EXPRESS
@@ -27,23 +34,26 @@ app.listen(PORT, () => {
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.GuildMessages
     ]
 });
+
+// =========================
+// READY
+// =========================
 
 client.once('ready', () => {
     console.log(`Bot online: ${client.user.tag}`);
 });
 
 // =========================
-// FILE DATA
+// DATA FILE
 // =========================
 
 const DATA_FILE = './data.json';
 
 // =========================
-// HAM LAY NGAY
+// NGAY
 // =========================
 
 function getToday() {
@@ -54,35 +64,45 @@ function getToday() {
 }
 
 // =========================
-// DATA MAC DINH
+// FORMAT TIEN
+// =========================
+
+function formatMoney(number) {
+
+    return number.toLocaleString('vi-VN');
+}
+
+// =========================
+// DATA
 // =========================
 
 let data = {
     date: getToday(),
     users: {},
-    history: {}
+    history: {},
+    kpi: 0
 };
 
 // =========================
-// DOC FILE
+// LOAD DATA
 // =========================
 
 if (fs.existsSync(DATA_FILE)) {
 
     try {
 
-        const rawData = fs.readFileSync(DATA_FILE);
+        data = JSON.parse(
+            fs.readFileSync(DATA_FILE)
+        );
 
-        data = JSON.parse(rawData);
+    } catch {
 
-    } catch (err) {
-
-        console.log('Loi doc file JSON');
+        console.log('Lỗi đọc data');
     }
 }
 
 // =========================
-// SAVE DATA
+// SAVE
 // =========================
 
 function saveData() {
@@ -94,80 +114,191 @@ function saveData() {
 }
 
 // =========================
-// RESET QUA NGAY MOI
+// CHECK NGAY MOI
 // =========================
 
 function checkNewDay() {
 
     const today = getToday();
 
-    // NEU QUA NGAY MOI
     if (data.date !== today) {
 
-        // TAO HISTORY NEU CHUA CO
         if (!data.history) {
             data.history = {};
         }
 
-        // LUU DU LIEU HOM QUA
         if (Object.keys(data.users).length > 0) {
 
-            data.history[data.date] = data.users;
+            data.history[data.date] =
+                data.users;
         }
 
-        // RESET
         data.date = today;
         data.users = {};
 
         saveData();
 
-        console.log('Đã reset sang ngày mới :white_sun_small_cloud: ');
+        console.log('Đã reset sang ngày mới:partly_sunny::partly_sunny::partly_sunny:');
     }
 }
 
 // =========================
-// MESSAGE EVENT
+// SLASH COMMANDS
 // =========================
 
-client.on('messageCreate', async (message) => {
+const commands = [
 
-    // BO QUA BOT
-    if (message.author.bot) return;
+    new SlashCommandBuilder()
+        .setName('tong')
+        .setDescription('Xem tong doanh thu'),
 
-    // CHI CHAY TRONG 1 KENH
-    if (message.channel.id !== process.env.CHANNEL_ID) return;
+    new SlashCommandBuilder()
+        .setName('history')
+        .setDescription('Xem lich su'),
 
-    // CHECK NGAY MOI
+    new SlashCommandBuilder()
+        .setName('reset')
+        .setDescription('Reset du lieu'),
+
+    new SlashCommandBuilder()
+        .setName('kpi')
+        .setDescription('Dat KPI')
+        .addIntegerOption(option =>
+            option
+                .setName('sotien')
+                .setDescription('So KPI')
+                .setRequired(true)
+        ),
+
+    new SlashCommandBuilder()
+        .setName('congkpi')
+        .setDescription('Cong KPI')
+        .addIntegerOption(option =>
+            option
+                .setName('sotien')
+                .setDescription('So tien')
+                .setRequired(true)
+        ),
+
+    new SlashCommandBuilder()
+        .setName('trukpi')
+        .setDescription('Tru KPI')
+        .addIntegerOption(option =>
+            option
+                .setName('sotien')
+                .setDescription('So tien')
+                .setRequired(true)
+        ),
+
+    new SlashCommandBuilder()
+        .setName('resetkpi')
+        .setDescription('Reset KPI'),
+
+    new SlashCommandBuilder()
+        .setName('them')
+        .setDescription('Them doanh thu')
+        .addIntegerOption(option =>
+            option
+                .setName('sotien')
+                .setDescription('So tien')
+                .setRequired(true)
+        )
+
+].map(command => command.toJSON());
+
+// =========================
+// REGISTER COMMAND
+// =========================
+
+const rest = new REST({
+    version: '10'
+}).setToken(process.env.TOKEN);
+
+(async () => {
+
+    try {
+
+        console.log('Dang register slash commands...');
+
+        await rest.put(
+            Routes.applicationCommands(
+                process.env.CLIENT_ID
+            ),
+            { body: commands }
+        );
+
+        console.log('Slash commands ready');
+
+    } catch (error) {
+
+        console.log(error);
+    }
+})();
+
+// =========================
+// INTERACTION
+// =========================
+
+client.on('interactionCreate', async interaction => {
+
+    if (!interaction.isChatInputCommand()) return;
+
+    // CHI CHAY 1 KENH
+    if (
+        interaction.channelId !==
+        process.env.CHANNEL_ID
+    ) {
+        return interaction.reply({
+            content: 'Sai kenh',
+            ephemeral: true
+        });
+    }
+
     checkNewDay();
 
-    const text = message.content.toLowerCase();
+    const { commandName } = interaction;
 
     // =========================
-    // RESET
+    // THEM TIEN
     // =========================
 
-    if (text === '!reset') {
+    if (commandName === 'them') {
 
-        data.users = {};
+        const soTien =
+            interaction.options.getInteger('sotien');
+
+        const username =
+            interaction.user.username;
+
+        if (!data.users[username]) {
+
+            data.users[username] = 0;
+        }
+
+        data.users[username] += soTien;
 
         saveData();
 
-        return message.reply('Reset thành công :piñata: ');
+        return interaction.reply(
+            `Đã thêm ${formatMoney(soTien)}k thành công:white_check_mark:`
+        );
     }
 
     // =========================
     // TONG
     // =========================
 
-    if (text === '!tong') {
+    if (commandName === 'tong') {
 
         let tong = 0;
 
-        let result = `📅 Ngày ${data.date}\n\n`;
+        let result =
+            `📅 Ngày ${data.date}\n\n`;
 
         for (const user in data.users) {
 
-            result += `${user} : ${data.users[user]}k\n`;
+            result +=
+                `${user} : ${formatMoney(data.users[user])}k\n`;
 
             tong += data.users[user];
         }
@@ -175,17 +306,133 @@ client.on('messageCreate', async (message) => {
         const chia3 =
             Math.round((tong / 3) * 100) / 100;
 
-        result += `\n💰 Tổng : ${tong}k`;
-        result += `\n👤 Mỗi người nhận : ${chia3}k`;
+        result +=
+            `\n💰 Tổng : ${formatMoney(tong)}k`;
 
-        return message.reply(result);
+        result +=
+            `\n👤 Mỗi người nhận : ${formatMoney(chia3)}k`;
+
+        if (data.kpi > 0) {
+
+            const percent = Math.min(
+                (tong / data.kpi) * 100,
+                100
+            );
+
+            const filled =
+                Math.round(percent / 10);
+
+            const empty = 10 - filled;
+
+            const bar =
+                '🟩'.repeat(filled) +
+                '⬜'.repeat(empty);
+
+            result += `\n`;
+            result += `\n🎯 KPI`;
+            result +=
+                `\n${bar} ${percent.toFixed(0)}%`;
+
+            result +=
+                `\n${formatMoney(tong)} / ${formatMoney(data.kpi)}`;
+        }
+
+        return interaction.reply(result);
+    }
+
+    // =========================
+    // KPI
+    // =========================
+
+    if (commandName === 'kpi') {
+
+        const amount =
+            interaction.options.getInteger('sotien');
+
+        data.kpi = amount;
+
+        saveData();
+
+        return interaction.reply(
+            `Đã đủ KPI cho sếp Danh ${formatMoney(amount)}:piñata::piñata::piñata:`
+        );
+    }
+
+    // =========================
+    // CONG KPI
+    // =========================
+
+    if (commandName === 'tangkpi') {
+
+        const amount =
+            interaction.options.getInteger('sotien');
+
+        data.kpi += amount;
+
+        saveData();
+
+        return interaction.reply(
+            `Đã tăng KPI ${formatMoney(amount)} :white_check_mark:`
+        );
+    }
+
+    // =========================
+    // TRU KPI
+    // =========================
+
+    if (commandName === 'giamkpi') {
+
+        const amount =
+            interaction.options.getInteger('sotien');
+
+        data.kpi -= amount;
+
+        if (data.kpi < 0) {
+            data.kpi = 0;
+        }
+
+        saveData();
+
+        return interaction.reply(
+            `Đã trừ KPI ${formatMoney(amount)} :white_check_mark:`
+        );
+    }
+
+    // =========================
+    // RESET KPI
+    // =========================
+
+    if (commandName === 'resetkpi') {
+
+        data.kpi = 0;
+
+        saveData();
+
+        return interaction.reply(
+            'Đã reset KPI :white_check_mark:'
+        );
+    }
+
+    // =========================
+    // RESET
+    // =========================
+
+    if (commandName === 'reset') {
+
+        data.users = {};
+
+        saveData();
+
+        return interaction.reply(
+            'Reset thành công :piñata:'
+        );
     }
 
     // =========================
     // HISTORY
     // =========================
 
-    if (text === '!history') {
+    if (commandName === 'history') {
 
         let result = '';
 
@@ -193,55 +440,26 @@ client.on('messageCreate', async (message) => {
 
             result += `\n📅 ${date}\n`;
 
-            const users = data.history[date];
+            const users =
+                data.history[date];
 
             let tong = 0;
 
             for (const user in users) {
 
-                result += `${user} : ${users[user]}k\n`;
+                result +=
+                    `${user} : ${formatMoney(users[user])}k\n`;
 
                 tong += users[user];
             }
 
-            result += `💰 Tổng : ${tong}k\n`;
+            result +=
+                `💰 Tổng : ${formatMoney(tong)}k\n`;
         }
 
-        return message.reply(
-            result || 'Chưa có lịch sử :warning: '
+        return interaction.reply(
+            result || 'Chưa có lịch sử :x: '
         );
-    }
-
-    // =========================
-    // NHAP TIEN
-    // VD:
-    // 150k
-    // =========================
-
-    const regex = /(\d+)k?/i;
-
-    const match = text.match(regex);
-
-    if (match) {
-
-        const soTien = parseInt(match[1]);
-
-        const username = message.author.username;
-
-        // TAO USER
-        if (!data.users[username]) {
-
-            data.users[username] = 0;
-        }
-
-        // CONG TIEN
-        data.users[username] += soTien;
-
-        // SAVE
-        saveData();
-
-        // REACT
-        await message.react('✅');
     }
 });
 
