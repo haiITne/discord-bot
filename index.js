@@ -149,46 +149,58 @@ function checkNewDay() {
 // =========================
 
 const commands = [
+	
+    new SlashCommandBuilder()
+        .setName('top')
+        .setDescription('Xem bảng xếp hạng'),
+
+    new SlashCommandBuilder()
+        .setName('me')
+        .setDescription('Xem doanh thu cá nhân'),
+
+    new SlashCommandBuilder()
+    	.setName('resethistory')
+    	.setDescription('Reset lịch sử'),
 
     new SlashCommandBuilder()
         .setName('tong')
-        .setDescription('Xem tong doanh thu'),
+        .setDescription('Xem tổng doanh thu'),
 
     new SlashCommandBuilder()
         .setName('history')
-        .setDescription('Xem lich su'),
+        .setDescription('Xem lịch sử'),
 
     new SlashCommandBuilder()
         .setName('reset')
-        .setDescription('Reset du lieu'),
+        .setDescription('Reset dữ liệu'),
 
     new SlashCommandBuilder()
         .setName('kpi')
-        .setDescription('Dat KPI')
+        .setDescription('Đặt KPI')
         .addIntegerOption(option =>
             option
                 .setName('sotien')
-                .setDescription('So KPI')
+                .setDescription('KPI')
                 .setRequired(true)
         ),
 
     new SlashCommandBuilder()
         .setName('tangkpi')
-        .setDescription('Tang KPI')
+        .setDescription('Tăng KPI')
         .addIntegerOption(option =>
             option
                 .setName('sotien')
-                .setDescription('So tien')
+                .setDescription('Số tiền')
                 .setRequired(true)
         ),
 
     new SlashCommandBuilder()
         .setName('giamkpi')
-        .setDescription('Giam KPI')
+        .setDescription('Giảm KPI')
         .addIntegerOption(option =>
             option
                 .setName('sotien')
-                .setDescription('So tien')
+                .setDescription('Số tiền')
                 .setRequired(true)
         ),
 
@@ -198,11 +210,11 @@ const commands = [
 
     new SlashCommandBuilder()
         .setName('them')
-        .setDescription('Them doanh thu')
+        .setDescription('Thêm doanh thu')
         .addIntegerOption(option =>
             option
                 .setName('sotien')
-                .setDescription('So tien')
+                .setDescription('Số tiền')
                 .setRequired(true)
         )
 
@@ -264,6 +276,64 @@ client.on('interactionCreate', async interaction => {
     checkNewDay();
 
     const { commandName } = interaction;
+// =========================
+// ME
+// =========================
+
+    if (commandName === 'me') {
+
+    const username =
+        interaction.user.username;
+
+    const money =
+        data.users[username] || 0;
+
+    return interaction.editReply(
+        `👤 ${username}\n💰 ${formatMoney(money)}k`
+    );
+}
+
+// =========================
+// TOP
+// =========================
+
+if (commandName === 'top') {
+
+    const sortedUsers =
+        Object.entries(data.users)
+        .sort((a, b) => b[1] - a[1]);
+
+    if (sortedUsers.length === 0) {
+
+        return interaction.editReply(
+            '❌ Chưa có dữ liệu'
+        );
+    }
+
+    let result =
+        '🏆 TOP DOANH THU\n\n';
+
+    sortedUsers.forEach(
+        ([user, money], index) => {
+
+            let icon = '👤';
+
+if (index === 0) icon = '🥇';
+else if (index === 1) icon = '🥈';
+else if (index === 2) icon = '🥉';
+
+// nguoi cuoi
+if (index === sortedUsers.length - 1) {
+    icon = '🐑 Con cừu đen';
+}
+
+            result +=
+                `${icon} ${index + 1}. ${user} - ${formatMoney(money)}k\n`;
+        }
+    );
+
+    return interaction.editReply(result);
+}
 
     // =========================
     // THEM TIEN
