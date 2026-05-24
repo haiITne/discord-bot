@@ -34,7 +34,8 @@ app.listen(PORT, () => {
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
     ]
 });
 
@@ -97,7 +98,7 @@ if (fs.existsSync(DATA_FILE)) {
 
     } catch {
 
-        console.log('Lỗi đọc data');
+        console.log('Loi doc data');
     }
 }
 
@@ -129,8 +130,9 @@ function checkNewDay() {
 
         if (Object.keys(data.users).length > 0) {
 
-            data.history[data.date] =
-                data.users;
+            data.history[data.date] = {
+                ...data.users
+            };
         }
 
         data.date = today;
@@ -138,7 +140,7 @@ function checkNewDay() {
 
         saveData();
 
-        console.log('Đã reset sang ngày mới:partly_sunny::partly_sunny::partly_sunny:');
+        console.log('Da reset sang ngay moi');
     }
 }
 
@@ -171,8 +173,8 @@ const commands = [
         ),
 
     new SlashCommandBuilder()
-        .setName('congkpi')
-        .setDescription('Cong KPI')
+        .setName('tangkpi')
+        .setDescription('Tang KPI')
         .addIntegerOption(option =>
             option
                 .setName('sotien')
@@ -181,8 +183,8 @@ const commands = [
         ),
 
     new SlashCommandBuilder()
-        .setName('trukpi')
-        .setDescription('Tru KPI')
+        .setName('giamkpi')
+        .setDescription('Giam KPI')
         .addIntegerOption(option =>
             option
                 .setName('sotien')
@@ -221,8 +223,9 @@ const rest = new REST({
         console.log('Dang register slash commands...');
 
         await rest.put(
-            Routes.applicationCommands(
-                process.env.CLIENT_ID
+            Routes.applicationGuildCommands(
+                process.env.CLIENT_ID,
+                process.env.GUILD_ID
             ),
             { body: commands }
         );
@@ -231,8 +234,8 @@ const rest = new REST({
 
     } catch (error) {
 
-        console.error('LOI REGISTER COMMAND:');
-    console.error(error);
+        console.error('LOI REGISTER COMMAND');
+        console.error(error);
     }
 })();
 
@@ -249,11 +252,14 @@ client.on('interactionCreate', async interaction => {
         interaction.channelId !==
         process.env.CHANNEL_ID
     ) {
+
         return interaction.reply({
             content: 'Sai kenh',
             ephemeral: true
         });
     }
+
+    await interaction.deferReply();
 
     checkNewDay();
 
@@ -280,8 +286,8 @@ client.on('interactionCreate', async interaction => {
 
         saveData();
 
-        return interaction.reply(
-            `Đã thêm ${formatMoney(soTien)}k thành công:white_check_mark:`
+        return interaction.editReply(
+            `✅ Đã thêm ${formatMoney(soTien)}k`
         );
     }
 
@@ -299,7 +305,7 @@ client.on('interactionCreate', async interaction => {
         for (const user in data.users) {
 
             result +=
-                `${user} : ${formatMoney(data.users[user])}k\n`;
+                `👤 ${user} : ${formatMoney(data.users[user])}k\n`;
 
             tong += data.users[user];
         }
@@ -338,7 +344,7 @@ client.on('interactionCreate', async interaction => {
                 `\n${formatMoney(tong)} / ${formatMoney(data.kpi)}`;
         }
 
-        return interaction.reply(result);
+        return interaction.editReply(result);
     }
 
     // =========================
@@ -354,13 +360,13 @@ client.on('interactionCreate', async interaction => {
 
         saveData();
 
-        return interaction.reply(
-            `Đã đủ KPI cho sếp Danh ${formatMoney(amount)}:piñata::piñata::piñata:`
+        return interaction.editReply(
+            `🎯 Đã đủ KPI ${formatMoney(amount)} cho sếp Danh :piñata: :piñata: :piñata: `
         );
     }
 
     // =========================
-    // CONG KPI
+    // TANG KPI
     // =========================
 
     if (commandName === 'tangkpi') {
@@ -372,13 +378,13 @@ client.on('interactionCreate', async interaction => {
 
         saveData();
 
-        return interaction.reply(
-            `Đã tăng KPI ${formatMoney(amount)} :white_check_mark:`
+        return interaction.editReply(
+            `📈 Đã tăng KPI ${formatMoney(amount)}`
         );
     }
 
     // =========================
-    // TRU KPI
+    // GIAM KPI
     // =========================
 
     if (commandName === 'giamkpi') {
@@ -389,13 +395,14 @@ client.on('interactionCreate', async interaction => {
         data.kpi -= amount;
 
         if (data.kpi < 0) {
+
             data.kpi = 0;
         }
 
         saveData();
 
-        return interaction.reply(
-            `Đã trừ KPI ${formatMoney(amount)} :white_check_mark:`
+        return interaction.editReply(
+            `📉 Đã giảm KPI ${formatMoney(amount)}`
         );
     }
 
@@ -409,8 +416,8 @@ client.on('interactionCreate', async interaction => {
 
         saveData();
 
-        return interaction.reply(
-            'Đã reset KPI :white_check_mark:'
+        return interaction.editReply(
+            '♻️ Đã reset KPI chích điện'
         );
     }
 
@@ -424,8 +431,8 @@ client.on('interactionCreate', async interaction => {
 
         saveData();
 
-        return interaction.reply(
-            'Reset thành công :piñata:'
+        return interaction.editReply(
+            '♻️ Reset thành công'
         );
     }
 
@@ -449,7 +456,7 @@ client.on('interactionCreate', async interaction => {
             for (const user in users) {
 
                 result +=
-                    `${user} : ${formatMoney(users[user])}k\n`;
+                    `👤 ${user} : ${formatMoney(users[user])}k\n`;
 
                 tong += users[user];
             }
@@ -458,14 +465,14 @@ client.on('interactionCreate', async interaction => {
                 `💰 Tổng : ${formatMoney(tong)}k\n`;
         }
 
-        return interaction.reply(
-            result || 'Chưa có lịch sử :x: '
+        return interaction.editReply(
+            result || '❌ Chưa có lịch sử'
         );
     }
 });
 
 // =========================
-// ADD DATA MONEY
+// AUTO ADD MONEY
 // =========================
 
 client.on('messageCreate', async (message) => {
@@ -479,12 +486,15 @@ client.on('messageCreate', async (message) => {
 
     checkNewDay();
 
-    const text = message.content.toLowerCase();
+    const text =
+        message.content.toLowerCase();
 
-    // bo qua command
-    if (text.startsWith('/')) return;
+    // BO QUA LENH
+    if (
+        text.startsWith('/')
+    ) return;
 
-    const regex = /(\d+)k?/i;
+    const regex = /^(\d+)k?$/i;
 
     const match = text.match(regex);
 
