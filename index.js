@@ -231,7 +231,8 @@ const rest = new REST({
 
     } catch (error) {
 
-        console.log(error);
+        console.error('LOI REGISTER COMMAND:');
+    console.error(error);
     }
 })();
 
