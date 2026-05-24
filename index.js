@@ -465,6 +465,51 @@ client.on('interactionCreate', async interaction => {
 });
 
 // =========================
+// ADD DATA MONEY
+// =========================
+
+client.on('messageCreate', async (message) => {
+
+    if (message.author.bot) return;
+
+    if (
+        message.channel.id !==
+        process.env.CHANNEL_ID
+    ) return;
+
+    checkNewDay();
+
+    const text = message.content.toLowerCase();
+
+    // bo qua command
+    if (text.startsWith('/')) return;
+
+    const regex = /(\d+)k?/i;
+
+    const match = text.match(regex);
+
+    if (match) {
+
+        const soTien =
+            parseInt(match[1]);
+
+        const username =
+            message.author.username;
+
+        if (!data.users[username]) {
+
+            data.users[username] = 0;
+        }
+
+        data.users[username] += soTien;
+
+        saveData();
+
+        await message.react('✅');
+    }
+});
+
+// =========================
 // LOGIN
 // =========================
 
