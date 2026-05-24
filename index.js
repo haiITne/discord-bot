@@ -1,6 +1,13 @@
 require('dotenv').config();
 
 const express = require('express');
+const fs = require('fs');
+const { Client, GatewayIntentBits } = require('discord.js');
+
+// =========================
+// EXPRESS
+// =========================
+
 const app = express();
 
 app.get('/', (req, res) => {
@@ -13,9 +20,9 @@ app.listen(PORT, () => {
     console.log(`Web server dang chay o cong ${PORT}`);
 });
 
-const fs = require('fs');
-
-const { Client, GatewayIntentBits } = require('discord.js');
+// =========================
+// DISCORD CLIENT
+// =========================
 
 const client = new Client({
     intents: [
@@ -30,13 +37,13 @@ client.once('ready', () => {
 });
 
 // =========================
-// FILE DU LIEU
+// FILE DATA
 // =========================
 
 const DATA_FILE = './data.json';
 
 // =========================
-// HAM NGAY
+// HAM LAY NGAY
 // =========================
 
 function getToday() {
@@ -47,7 +54,7 @@ function getToday() {
 }
 
 // =========================
-// DOC DU LIEU
+// DATA MAC DINH
 // =========================
 
 let data = {
@@ -56,11 +63,22 @@ let data = {
     history: {}
 };
 
+// =========================
+// DOC FILE
+// =========================
+
 if (fs.existsSync(DATA_FILE)) {
 
-    data = JSON.parse(
-        fs.readFileSync(DATA_FILE)
-    );
+    try {
+
+        const rawData = fs.readFileSync(DATA_FILE);
+
+        data = JSON.parse(rawData);
+
+    } catch (err) {
+
+        console.log('Loi doc file JSON');
+    }
 }
 
 // =========================
@@ -86,13 +104,13 @@ function checkNewDay() {
     // NEU QUA NGAY MOI
     if (data.date !== today) {
 
-        // TAO HISTORY
+        // TAO HISTORY NEU CHUA CO
         if (!data.history) {
             data.history = {};
         }
 
-        // LUU NGAY CU
-        if (data.date) {
+        // LUU DU LIEU HOM QUA
+        if (Object.keys(data.users).length > 0) {
 
             data.history[data.date] = data.users;
         }
@@ -103,22 +121,23 @@ function checkNewDay() {
 
         saveData();
 
-        console.log('Đã reset sang ngày mới🌞');
+        console.log('Đã reset sang ngày mới ☀');
     }
 }
 
 // =========================
-// MESSAGE
+// MESSAGE EVENT
 // =========================
 
 client.on('messageCreate', async (message) => {
 
+    // BO QUA BOT
     if (message.author.bot) return;
 
     // CHI CHAY TRONG 1 KENH
     if (message.channel.id !== process.env.CHANNEL_ID) return;
 
-    // CHECK QUA NGAY
+    // CHECK NGAY MOI
     checkNewDay();
 
     const text = message.content.toLowerCase();
@@ -185,11 +204,11 @@ client.on('messageCreate', async (message) => {
                 tong += users[user];
             }
 
-            result += `Tổng : ${tong}k✨\n`;
+            result += `💰 Tổng : ${tong}k\n`;
         }
 
         return message.reply(
-            result || 'Chưa có lịch sử⚠'
+            result || 'Chua co lich su'
         );
     }
 
@@ -209,15 +228,19 @@ client.on('messageCreate', async (message) => {
 
         const username = message.author.username;
 
+        // TAO USER
         if (!data.users[username]) {
 
             data.users[username] = 0;
         }
 
+        // CONG TIEN
         data.users[username] += soTien;
 
+        // SAVE
         saveData();
 
+        // REACT
         await message.react('✅');
     }
 });
