@@ -208,7 +208,7 @@ client.on('messageCreate', async (message) => {
         }
 
         return message.reply(
-            result || 'Chua co lich su'
+            result || 'Chưa có lịch sử ⚠'
         );
     }
 
