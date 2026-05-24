@@ -121,7 +121,7 @@ function checkNewDay() {
 
         saveData();
 
-        console.log('Đã reset sang ngày mới ☀');
+        console.log('Đã reset sang ngày mới :white_sun_small_cloud: ');
     }
 }
 
@@ -152,7 +152,7 @@ client.on('messageCreate', async (message) => {
 
         saveData();
 
-        return message.reply('Reset thành công 🎉');
+        return message.reply('Reset thành công :piñata: ');
     }
 
     // =========================
@@ -208,7 +208,7 @@ client.on('messageCreate', async (message) => {
         }
 
         return message.reply(
-            result || 'Chưa có lịch sử ⚠'
+            result || 'Chưa có lịch sử :warning: '
         );
     }
 
