@@ -40,6 +40,40 @@ if (fs.existsSync(DATA_FILE)) {
     users = JSON.parse(data);
 }
 
+function getToday() {
+
+    const d = new Date();
+
+    return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+}
+
+function checkNewDay() {
+
+    const today = getToday();
+
+    // neu qua ngay moi
+    if (data.date !== today) {
+
+        // tao history neu chua co
+        if (!data.history) {
+            data.history = {};
+        }
+
+        // luu du lieu ngay cu
+        if (data.date) {
+            data.history[data.date] = data.users;
+        }
+
+        // reset ngay moi
+        data.date = today;
+        data.users = {};
+
+        saveData();
+
+        console.log('Đã reset sang ngày mới✨');
+    }
+}
+
 // HAM SAVE
 function saveData() {
 
@@ -58,9 +92,10 @@ client.on('messageCreate', async (message) => {
 
     if (message.author.bot) return;
 
+
     // CHI CHAY TRONG 1 KENH
     if (message.channel.id !== process.env.CHANNEL_ID) return;
-
+    checkNewDay();
     const text = message.content.toLowerCase();
 
     // RESET
@@ -97,6 +132,30 @@ client.on('messageCreate', async (message) => {
     result += `\nMỗi người nhận : ${chia3}k`;
 
     return message.reply(result);
+}
+if (text === '!history') {
+
+    let result = '';
+
+    for (const date in data.history) {
+
+        result += `\n📅 ${date}\n`;
+
+        const users = data.history[date];
+
+        let tong = 0;
+
+        for (const user in users) {
+
+            result += `${user} : ${users[user]}k\n`;
+
+            tong += users[user];
+        }
+
+        result += `Tổng : ${tong}k\n✨`;
+    }
+
+    return message.reply(result || 'Chưa có Lịch Sử');
 }
 
     // VD:
