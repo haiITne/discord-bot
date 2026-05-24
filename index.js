@@ -24,21 +24,20 @@ const client = new Client({
         GatewayIntentBits.MessageContent
     ]
 });
+
 client.once('ready', () => {
     console.log(`Bot online: ${client.user.tag}`);
 });
-// FILE LUU DU LIEU
+
+// =========================
+// FILE DU LIEU
+// =========================
+
 const DATA_FILE = './data.json';
 
-// DOC DU LIEU
-let users = {};
-
-if (fs.existsSync(DATA_FILE)) {
-
-    const data = fs.readFileSync(DATA_FILE);
-
-    users = JSON.parse(data);
-}
+// =========================
+// HAM NGAY
+// =========================
 
 function getToday() {
 
@@ -47,143 +46,184 @@ function getToday() {
     return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 }
 
+// =========================
+// DOC DU LIEU
+// =========================
+
+let data = {
+    date: getToday(),
+    users: {},
+    history: {}
+};
+
+if (fs.existsSync(DATA_FILE)) {
+
+    data = JSON.parse(
+        fs.readFileSync(DATA_FILE)
+    );
+}
+
+// =========================
+// SAVE DATA
+// =========================
+
+function saveData() {
+
+    fs.writeFileSync(
+        DATA_FILE,
+        JSON.stringify(data, null, 2)
+    );
+}
+
+// =========================
+// RESET QUA NGAY MOI
+// =========================
+
 function checkNewDay() {
 
     const today = getToday();
 
-    // neu qua ngay moi
+    // NEU QUA NGAY MOI
     if (data.date !== today) {
 
-        // tao history neu chua co
+        // TAO HISTORY
         if (!data.history) {
             data.history = {};
         }
 
-        // luu du lieu ngay cu
+        // LUU NGAY CU
         if (data.date) {
+
             data.history[data.date] = data.users;
         }
 
-        // reset ngay moi
+        // RESET
         data.date = today;
         data.users = {};
 
         saveData();
 
-        console.log('Đã reset sang ngày mới✨');
+        console.log('Đã reset sang ngày mới🌞');
     }
 }
 
-// HAM SAVE
-function saveData() {
-
-    fs.writeFileSync(
-        DATA_FILE,
-        JSON.stringify(users, null, 2)
-    );
-}
-
-client.once('ready', () => {
-
-    console.log(`Bot online: ${client.user.tag}`);
-});
+// =========================
+// MESSAGE
+// =========================
 
 client.on('messageCreate', async (message) => {
 
     if (message.author.bot) return;
 
-
     // CHI CHAY TRONG 1 KENH
     if (message.channel.id !== process.env.CHANNEL_ID) return;
+
+    // CHECK QUA NGAY
     checkNewDay();
+
     const text = message.content.toLowerCase();
 
+    // =========================
     // RESET
+    // =========================
+
     if (text === '!reset') {
 
-        users = {};
+        data.users = {};
 
         saveData();
 
-        return message.reply('Reset thành công🎉');
+        return message.reply('Reset thành công 🎉');
     }
+
+    // =========================
     // TONG
+    // =========================
+
     if (text === '!tong') {
-
-    let tong = 0;
-
-    const today = new Date();
-
-    const ngay =
-        `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
-
-    let result = `Ngày ${ngay}\n\n`;
-
-    for (const user in users) {
-
-        result += `${user} : ${users[user]}k\n`;
-
-        tong += users[user];
-    }
-
-    const chia3 = Math.round((tong / 3) * 100) / 100;
-
-    result += `\nTổng : ${tong}k`;
-    result += `\nMỗi người nhận : ${chia3}k`;
-
-    return message.reply(result);
-}
-if (text === '!history') {
-
-    let result = '';
-
-    for (const date in data.history) {
-
-        result += `\n📅 ${date}\n`;
-
-        const users = data.history[date];
 
         let tong = 0;
 
-        for (const user in users) {
+        let result = `📅 Ngày ${data.date}\n\n`;
 
-            result += `${user} : ${users[user]}k\n`;
+        for (const user in data.users) {
 
-            tong += users[user];
+            result += `${user} : ${data.users[user]}k\n`;
+
+            tong += data.users[user];
         }
 
-        result += `Tổng : ${tong}k\n✨`;
+        const chia3 =
+            Math.round((tong / 3) * 100) / 100;
+
+        result += `\n💰 Tổng : ${tong}k`;
+        result += `\n👤 Mỗi người nhận : ${chia3}k`;
+
+        return message.reply(result);
     }
 
-    return message.reply(result || 'Chưa có Lịch Sử');
-}
+    // =========================
+    // HISTORY
+    // =========================
 
+    if (text === '!history') {
+
+        let result = '';
+
+        for (const date in data.history) {
+
+            result += `\n📅 ${date}\n`;
+
+            const users = data.history[date];
+
+            let tong = 0;
+
+            for (const user in users) {
+
+                result += `${user} : ${users[user]}k\n`;
+
+                tong += users[user];
+            }
+
+            result += `Tổng : ${tong}k✨\n`;
+        }
+
+        return message.reply(
+            result || 'Chưa có lịch sử⚠'
+        );
+    }
+
+    // =========================
+    // NHAP TIEN
     // VD:
-    // 3 cục 150k
+    // 150k
+    // =========================
 
     const regex = /(\d+)k?/i;
 
-const match = text.match(regex);
+    const match = text.match(regex);
 
-if (match) {
+    if (match) {
 
-    const soTien = parseInt(match[1]);
+        const soTien = parseInt(match[1]);
 
         const username = message.author.username;
 
-        if (!users[username]) {
+        if (!data.users[username]) {
 
-            users[username] = 0;
+            data.users[username] = 0;
         }
 
-        users[username] += soTien;
+        data.users[username] += soTien;
 
-        // SAVE
         saveData();
 
         await message.react('✅');
     }
-
 });
+
+// =========================
+// LOGIN
+// =========================
 
 client.login(process.env.TOKEN);
